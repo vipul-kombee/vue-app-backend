@@ -1,4 +1,5 @@
 const Product = require("./product.model");
+const passport = require('passport');
 const { isValidObjectId } = require("mongoose");
 
 exports.getProducts = (req, res) => {
