@@ -12,6 +12,11 @@ router.get(
   ProductController.getProducts
 );
 router.get(
+  "/filterProducts",
+  auth,
+  ProductController.searchProducts
+)
+router.get(
   "/getProducts/:userId",
   auth,
   roleAccess(["SELLER"]),

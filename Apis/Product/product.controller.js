@@ -30,6 +30,7 @@ exports.getProducts = (req, res) => {
       .then((products) => {
         res.status(200).json({
           message: "Products fetched!",
+          totalProducts: products.length,
           products,
         });
       });
@@ -80,6 +81,7 @@ exports.getProductsByuserId = (req, res) => {
       .then((products) => {
         res.status(200).json({
           message: "Products fetched!",
+          totalProducts: products.length,
           products,
         });
       })
@@ -313,3 +315,100 @@ exports.deleteProduct = async (req, res) => {
     });
   }
 };
+
+//filtered products
+exports.searchProducts = async (req, res) => {
+  try {
+    const {
+      search,          // search by name or description
+      minPrice,        // minimum price
+      maxPrice,        // maximum price
+      sortBy,          // sort field (price, name, createdAt)
+      sortOrder,       // asc or desc
+      limit = 10,      // items per page
+      page = 1         // current page
+    } = req.query;
+
+    //filter object
+    let filter = {};
+
+    // Search by name or description
+    if(search) {
+      filter.$or = [
+        {name: { $regex: search, $options: 'i'}},
+        { description: { $regex: search, $options: 'i' } }
+      ]
+    }
+   
+    // Price range filter
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if(minPrice) filter.price.$gte = parseFloat(minPrice);
+      if(maxPrice) filter.price.$lte = parseFloat(maxPrice);
+    }
+
+    let sort = {};
+    if (sortBy) {
+      sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+    } else {
+      sort = { createdAt: -1};
+    }
+
+    //calculate skip for pagination
+    const skip = (page - 1) * limit;
+
+    //get total count for pagination
+    const total = await Product.countDocuments(filter);
+
+    //Execute query
+    const products = await Product.find(filter)
+       .sort(sort)
+       .skip(skip)
+       .limit(parseInt(limit));
+
+       const totalPages = Math.ceil(total / limit);
+
+    // Add aggregation for faceted search (optional)
+    const aggregation = await Product.aggregate([
+      { $match: filter },
+      {
+        $facet: {
+          categories: [
+            { $group: { _id: '$category', count: { $sum: 1 } } }
+          ],
+          priceRanges: [
+            {
+              $bucket: {
+                groupBy: '$price',
+                boundaries: [0, 100, 500, 1000, 5000],
+                default: 'Other',
+                output: { count: { $sum: 1 } }
+              }
+            }
+          ]
+        }
+      }
+    ]);   
+
+    res.status(200).json({
+      status: 'success',
+      message: "fetch Filtered Products!",
+      data: {
+        pagination: {
+          total,
+          facets: aggregation[0],
+          page: parseInt(page),
+          totalPages,
+          limit: parseInt(limit)
+        },
+        products
+      }
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      message: "Error in Filtered Products",
+      error,
+    });
+  }
+}
