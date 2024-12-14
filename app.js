@@ -6,8 +6,17 @@ const LocalStrategy = require("passport-local").Strategy;
 const bcrypt = require("bcryptjs");
 const User = require("./Apis/User/user.model");
 require("dotenv").config();
+const cors = require('cors');
 app.use(express.json());
 const mongoose = require("mongoose");
+
+// Add CORS middleware
+app.use(
+  cors({
+    origin: true, // Replace with your frontend domain, e.g., "http://localhost:3000"
+    credentials: true, // Allows cookies to be sent
+  })
+);
 
 //Add express-session middleware
 app.use(
@@ -72,18 +81,18 @@ app.get("/health", (req, res, next) => {
 });
 
 //to handle CORS error( implemented by web browsers to prevent web pages from making requests to a different domain)
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
-  );
-  if (req.method === "OPTIONS") {
-    res.header("Access-Control-Allow-Methods", "PUT, POST, PATCH, DELETE, GET");
-    return res.status(200).json({});
-  }
-  next();
-});
+// app.use((req, res, next) => {
+//   res.header("Access-Control-Allow-Origin", "*");
+//   res.header(
+//     "Access-Control-Allow-Headers",
+//     "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+//   );
+//   if (req.method === "OPTIONS") {
+//     res.header("Access-Control-Allow-Methods", "PUT, POST, PATCH, DELETE, GET");
+//     return res.status(200).json({});
+//   }
+//   next();
+// });
 
 app.use("/user", UserRoutes);
 app.use("/product", ProductRoutes);
