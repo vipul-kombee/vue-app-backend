@@ -6,7 +6,7 @@ const LocalStrategy = require("passport-local").Strategy;
 const bcrypt = require("bcryptjs");
 const User = require("./Apis/User/user.model");
 require("dotenv").config();
-const cors = require('cors');
+const cors = require("cors");
 app.use(express.json());
 const mongoose = require("mongoose");
 
@@ -67,6 +67,38 @@ passport.deserializeUser(async (id, done) => {
     done(null, user);
   } catch (err) {
     done(err);
+  }
+});
+
+app.post("/refresh-session", (req, res) => {
+  if (req.isAuthenticated()) {
+    //regenerate session
+    req.session.regenerate((err) => {
+      if (err) {
+        return res.status(500).json({
+          message: "Failed to refresh session",
+        });
+      }
+
+      //Re-authenticate user
+      req.login(req.user, (loginErr) => {
+        if (loginErr) {
+          return res.status(500).json({ message: "Failed to re-authenticate" });
+        }
+
+        //Reset the maxAge of the cookie
+        req.session.cookie.maxAge = 24 * 60 * 60 * 1000;
+
+        return res.json({
+          message: "Session refreshed successfully",
+          expiresIn: req.session.cookie.maxAge,
+        });
+      });
+    });
+  } else {
+    res.status(401).json({
+      message: "User not authenticated",
+    });
   }
 });
 
