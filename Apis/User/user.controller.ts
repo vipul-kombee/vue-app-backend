@@ -1,10 +1,8 @@
-const User = require("./user.model");
-const jwt = require("jsonwebtoken");
-const { isValidObjectId } = require("mongoose");
-const bcrypt = require("bcryptjs");
-const crypto = require("crypto");
-const passport = require("passport");
-const sendResetPasswordEmail = require("../../utils/emailService");
+import User from './user.model';
+import bcrypt from 'bcryptjs';
+import passport from 'passport';
+import sendResetPasswordEmail from '../../utils/emailService';
+import { Request, Response, NextFunction } from 'express';
 
 // exports.register = async (req, res) => {
 //   try {
@@ -54,7 +52,7 @@ const sendResetPasswordEmail = require("../../utils/emailService");
 //   }
 // };
 
-exports.validateEmail = function (email) {
+const validateEmail = (email: string) => {
   let re = /^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$/;
   return !!re.test(email);
 };
@@ -100,9 +98,9 @@ exports.validateEmail = function (email) {
 //     }
 // }
 
-exports.register = async (req, res) => {
+export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    if (!this.validateEmail(req.body.email)) {
+    if (!validateEmail(req.body.email)) {
       return res.status(400).json({
         message: "Invalid Email",
       });
@@ -148,7 +146,7 @@ exports.register = async (req, res) => {
   }
 };
 
-exports.login = (req, res, next) => {
+export const login = (req: Request, res: Response, next: NextFunction) => {
   passport.authenticate("local", (err, user, info) => {
     if (err) {
       return res.status(500).json({
@@ -182,7 +180,7 @@ exports.login = (req, res, next) => {
   })(req, res, next);
 };
 
-exports.logout = (req, res) => {
+export const logout = (req: Request, res: Response, next: NextFunction) => {
   req.logout((err) => {
     if (err) {
       return res.status(500).json({
@@ -197,7 +195,7 @@ exports.logout = (req, res) => {
 };
 
 // Request password reset
-exports.forgotPass = async (req, res) => {
+export const forgotPass = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
@@ -207,13 +205,12 @@ exports.forgotPass = async (req, res) => {
         message: "User not found",
       });
     }
+    // Generate random reset token
+    const resetToken = require('crypto').randomBytes(32).toString("hex");
 
-    //generate rendom reset token
-    const resetToken = crypto.randomBytes(32).toString("hex");
-
-    //Save token and expiry to user doc.
+    // Save token and expiry to user doc
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour expiry
+    user.resetPasswordExpires = new Date(Date.now() + 3600000); // 1 hour expiry
     await user.save();
 
     //Send reset email
@@ -236,7 +233,7 @@ exports.forgotPass = async (req, res) => {
 };
 
 // Reset password with token
-exports.resetPass = async (req, res) => {
+export const resetPass = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { token } = req.params;
     const { newPassword } = req.body;

@@ -1,3 +1,16 @@
+import { request, response } from 'express';
+import { UserType } from '../types';
+import { Request, Response, NextFunction } from 'express';
+
+declare module 'express' {
+  interface Request {
+    user?: {
+      type: UserType;
+      [key: string]: any;
+    };
+  }
+}
+
 // const roleAccess = (permissions) => {
 
 //     return (req, res, next) => {
@@ -29,7 +42,7 @@
 
 // module.exports = roleAccess;
 
-const isSuperAdmin = (req, res, next) => {
+const isSuperAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (req.user && req.user.type === "SUPERADMIN") {
     next();
   } else {
@@ -37,7 +50,7 @@ const isSuperAdmin = (req, res, next) => {
   }
 };
 
-const isSeller = (req, res, next) => {
+const isSeller = (req: Request, res: Response, next: NextFunction) => {
   if (req.user && req.user.type === "SELLER") {
     next();
   } else {
@@ -45,8 +58,8 @@ const isSeller = (req, res, next) => {
   }
 };
 
-const roleAccess = (allowedRoles) => {
-  return (req, res, next) => {
+const roleAccess = (allowedRoles: UserType[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (req.user && allowedRoles.includes(req.user.type)) {
       next();
     } else {

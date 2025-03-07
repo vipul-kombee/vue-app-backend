@@ -1,13 +1,16 @@
-const mongoose = require("mongoose");
+import mongoose, { Schema, Document } from 'mongoose';
+import { ISession } from "../../types";
 
-const sessionSchema = new mongoose.Schema({
+export interface ISessionDocument extends ISession, Document { }
+
+const sessionSchema = new Schema({
   token: {
     type: String,
     required: true,
     unique: true,
   },
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
+    type: Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },

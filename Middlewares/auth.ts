@@ -1,5 +1,5 @@
-const jwt = require("jsonwebtoken");
-const SECRET = "27676ghgtysj";
+import { Request, Response, NextFunction } from 'express';
+
 
 // const auth = (req, res, next) => {
 //     try {
@@ -9,7 +9,7 @@ const SECRET = "27676ghgtysj";
 //             token = token.split(" ")[1];
 
 //             let user = jwt.verify(token, SECRET);
-            
+
 //             req.userId = user._id;
 //             req.userType = user.type;
 
@@ -18,9 +18,9 @@ const SECRET = "27676ghgtysj";
 //         else{
 //             res.status(401).json({
 //                 messsage: "UnAuthoeized user",
-//             }) 
+//             })
 //         }
-//     } 
+//     }
 //     catch(error){
 //         res.status(401).json({
 //             messsage: "UnAuthoeized user",
@@ -29,15 +29,13 @@ const SECRET = "27676ghgtysj";
 //     }
 // }
 
-
-const auth = (req, res, next) => {
-    if(req.isAuthenticated()){
-        return next();
-    }
-    res.status(401).json({
-        message: "Unauthorized"
-    })
-}  
-
+const auth = (req: Request, res: Response, next: NextFunction): void => {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({
+    message: "Unauthorized",
+  });
+};
 
 module.exports = auth;
