@@ -1,50 +1,53 @@
-const express = require("express");
-const router = express.Router();
-const ProductController = require("./product.controller");
+import express, { Router } from 'express';
+// const ProductController = require("./product.controller");
 const auth = require("../../Middlewares/auth");
 const roleAccess = require("../../Middlewares/roleAccess");
 const UserController = require("../User/user.controller");
+
+import { getProducts ,createProduct, searchProducts, getProductsByuserId, getSingleProduct, deleteProduct, editProduct } from './product.controller';
+
+const router: Router = express.Router();
 
 router.get(
   "/getProducts",
   auth,
   roleAccess(["SUPERADMIN", "BUYER"]),
-  ProductController.getProducts
+  getProducts as express.RequestHandler
 );
 router.get(
   "/filterProducts",
   auth,
-  ProductController.searchProducts
+  searchProducts as express.RequestHandler
 )
 router.get(
   "/getProducts/:userId",
   auth,
   roleAccess(["SELLER"]),
-  ProductController.getProductsByuserId
+  getProductsByuserId as express.RequestHandler
 );
 router.get(
   "/getProduct/:id",
   auth,
   roleAccess(["SELLER"]),
-  ProductController.getSingleProduct
+  getSingleProduct as express.RequestHandler
 );
 router.post(
   "/createProduct/:userId",
   auth,
   roleAccess(["SELLER"]),
-  ProductController.createProduct
+  createProduct as express.RequestHandler
 );
 router.delete(
   "/deleteProduct/:id",
   auth,
   roleAccess(["SELLER"]),
-  ProductController.deleteProduct
+  deleteProduct as express.RequestHandler
 );
 router.put(
   `/editProduct/:id`,
   auth,
   roleAccess(["SELLER"]),
-  ProductController.editProduct
+  editProduct as express.RequestHandler
 );
 
 module.exports = router;

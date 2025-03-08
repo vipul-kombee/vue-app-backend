@@ -1,17 +1,20 @@
-const Product = require("./product.model");
-const passport = require('passport');
-const { isValidObjectId } = require("mongoose");
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
-const { fstat } = require("fs");
+import Product from './product.model';
+import { isValidObjectId } from 'mongoose';
+import multer from 'multer';
+import { Request, Response, NextFunction } from 'express';
+import fs from 'fs';
+import { IProduct } from '../../types';
+import { MulterError } from 'multer';
+import { FilterQuery } from 'mongoose';
+
+
 
 //code to store image files in particular folder
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (cb: (error: Error | null, destination: string) => void) => {
     cb(null, "ImageUploads/"); // Define the directory where uploaded files will be stored
   },
-  filename: (req, file, cb) => {
+  filename: ( file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
     cb(null, Date.now() + "-" + file.originalname); //define file name
   }
 });
@@ -23,56 +26,50 @@ const upload = multer({
   },
 })
 
-exports.getProducts = (req, res) => {
+export const getProducts = async (req: Request, res: Response) => {
   try {
-    Product.find()
-      .exec()
-      .then((products) => {
-        res.status(200).json({
-          message: "Products fetched!",
-          totalProducts: products.length,
-          products,
-        });
-      });
+    const products = await Product.find().exec();
+    res.status(200).json({
+      message: "Products fetched!",
+      totalProducts: products.length,
+      products,
+    });
   } catch (error) {
     res.status(500).json({
       message: "Error in fetch products",
-      error,
+      error: error.message,
     });
   }
 };
 
-exports.getSingleProduct = (req, res) => {
-    const productId = req.params.id;
+export const getSingleProduct = async (req: Request, res: Response) => {
+    const productId: string = req.params.id;
     try {
-        Product.findById(productId).exec()
-        .then((product) => {
-            res.status(200).json({
-                message: "Product fetched!",
-                product,
-              });
-        })
-        .catch(() => {
-            res.status(500).json({
-              message: "Error in fetch product",
-              error,
+        const product = await Product.findById(productId).exec();
+        if (!product) {
+            return res.status(404).json({
+                message: "Product not found",
             });
-          });
+        }
+        res.status(200).json({
+            message: "Product fetched!",
+            product,
+        });
     } catch (error) {
         res.status(500).json({
-          message: "Error in fetch product",
-          error,
+            message: "Error in fetch product",
+            error: error instanceof Error ? error.message : 'Unknown error',
         });
-      }
-}
+    }
+};
 
-exports.getProductsByuserId = (req, res) => {
+export const getProductsByuserId = (req: Request, res: Response) => {
   const userId = req.params.userId;
   try {
     if (!isValidObjectId(userId)) {
       return res.status(400).json({
         message: "userId is not valid",
-        Id: productId,
+        Id: userId,
       });
     }
 
@@ -85,16 +82,16 @@ exports.getProductsByuserId = (req, res) => {
           products,
         });
       })
-      .catch(() => {
+      .catch((error) => {
         res.status(500).json({
           message: "Error in fetch products",
-          error,
+          error: error.message
         });
       });
   } catch (error) {
     res.status(500).json({
       message: "Error in fetch products",
-      error,
+      error: error.message
     });
   }
 };
@@ -132,11 +129,11 @@ exports.getProductsByuserId = (req, res) => {
 //   }
 // };
 
-exports.createProduct = (req, res, next) => {
+export const createProduct = (req: Request, res: Response) => {
   
   //use upload middleware to handle upload of product image
   //except file with field name productimage
-  upload.single("productImage")(req, res, (err) => {
+  upload.single("productImage")(req, res, (err: Error | MulterError | null) => {
     if (err) {
       return res.status(400).json({
         message: "Error uploading file",
@@ -175,7 +172,7 @@ exports.createProduct = (req, res, next) => {
 };
 
 //update product Api
-exports.editProduct = async (req, res) => {
+export const editProduct = async (req: Request, res: Response) => {
   const productId = req.params.id;
 
   if (!isValidObjectId(productId)) {
@@ -210,7 +207,12 @@ exports.editProduct = async (req, res) => {
 
       try {
         // Create update object from form-data
-        const updateData = {};
+        const updateData: IProduct = {
+          name: '',
+          price: '',
+          description: '',
+          productImage: ''
+        };
 
         // Only update fields that are present in the request
         if (req.body.name) updateData.name = req.body.name;
@@ -272,7 +274,7 @@ exports.editProduct = async (req, res) => {
   }
 };
 
-exports.deleteProduct = async (req, res) => {
+export const deleteProduct = async (req: Request, res: Response) => {
   const productId = req.params.id;
 
   if (!isValidObjectId(productId)) {
@@ -317,20 +319,28 @@ exports.deleteProduct = async (req, res) => {
 };
 
 //filtered products
-exports.searchProducts = async (req, res) => {
+export const searchProducts = async (req: Request, res: Response) => {
   try {
     const {
-      search,          // search by name or description
-      minPrice,        // minimum price
-      maxPrice,        // maximum price
-      sortBy,          // sort field (price, name, createdAt)
-      sortOrder,       // asc or desc
-      limit = 10,      // items per page
-      page = 1         // current page
-    } = req.query;
+      search,
+      minPrice,
+      maxPrice,
+      sortBy,
+      sortOrder,
+      limit = "10",
+      page = "1"
+    } = req.query as {
+      search?: string;
+      minPrice?: string;
+      maxPrice?: string;
+      sortBy?: string;
+      sortOrder?: string;
+      limit?: string;
+      page?: string;
+    };
 
     //filter object
-    let filter = {};
+    let filter: FilterQuery<IProduct> = {};
 
     // Search by name or description
     if(search) {
@@ -355,7 +365,7 @@ exports.searchProducts = async (req, res) => {
     }
 
     //calculate skip for pagination
-    const skip = (page - 1) * limit;
+    const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
 
     //get total count for pagination
     const total = await Product.countDocuments(filter);
@@ -364,9 +374,9 @@ exports.searchProducts = async (req, res) => {
     const products = await Product.find(filter)
        .sort(sort)
        .skip(skip)
-       .limit(parseInt(limit));
+       .limit(parseInt(limit as string));
 
-       const totalPages = Math.ceil(total / limit);
+       const totalPages = Math.ceil(total / parseInt(limit as string));
 
     // Add aggregation for faceted search (optional)
     const aggregation = await Product.aggregate([
@@ -397,9 +407,9 @@ exports.searchProducts = async (req, res) => {
         pagination: {
           total,
           facets: aggregation[0],
-          page: parseInt(page),
+          page: parseInt(page as string),
           totalPages,
-          limit: parseInt(limit)
+          limit: parseInt(limit as string)
         },
         products
       }

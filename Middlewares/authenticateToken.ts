@@ -1,5 +1,5 @@
 const Session = require("../Apis/Session/session.model");
-const userModel = require("../Apis/User/user.model");
+const userModel = require("./Apis/User/user.model");
 import { Request, Response, NextFunction } from 'express';
 
 const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {

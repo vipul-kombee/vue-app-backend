@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 export enum UserType {
     BUYER = 'BUYER',
     SELLER = 'SELLER',
@@ -21,3 +23,11 @@ export interface ISession {
     userId: string;
     expires: Date;
 } 
+
+export interface IProduct {
+    name: string;
+    price: string;
+    description: string;
+    seller?: mongoose.Schema.Types.ObjectId;
+    productImage: string;
+}

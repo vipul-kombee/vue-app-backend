@@ -1,14 +1,20 @@
-const express = require("express");
+import express, { Request, Response, NextFunction } from "express";
+import session from "express-session";
+import passport from "passport";
+import { Strategy as LocalStrategy } from "passport-local";
+import bcrypt from "bcryptjs";
+import User from "./Apis/User/user.model";
+import dotenv from "dotenv";
+import cors from "cors";
+import mongoose from "mongoose";
+import { IUser } from "./types";
+
+dotenv.config();
 const app = express();
-const session = require("express-session");
-const passport = require("passport");
-const LocalStrategy = require("passport-local").Strategy;
-const bcrypt = require("bcryptjs");
-const User = require("./Apis/User/user.model");
-require("dotenv").config();
-const cors = require("cors");
+
+// Add body-parser middleware
 app.use(express.json());
-const mongoose = require("mongoose");
+app.use(express.urlencoded({ extended: true }));
 
 // Add CORS middleware
 app.use(
@@ -21,7 +27,7 @@ app.use(
 //Add express-session middleware
 app.use(
   session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET as string,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -57,11 +63,11 @@ passport.use(
   )
 );
 
-passport.serializeUser((user, done) => {
+passport.serializeUser((user: any, done: Function) => {
   done(null, user.id);
 });
 
-passport.deserializeUser(async (id, done) => {
+passport.deserializeUser(async (id: IUser['_id'], done: Function) => {
   try {
     const user = await User.findById(id);
     done(null, user);
@@ -102,15 +108,15 @@ app.post("/refresh-session", (req, res) => {
   }
 });
 
-const UserRoutes = require("./Apis/User/user.route");
-const ProductRoutes = require("./Apis/Product/product.route");
+import UserRoutes from "./Apis/User/user.route";
+import ProductRoutes from "./Apis/Product/product.route";
 
-app.get("/health", (req, res, next) => {
-  return res.status(200).json({
-    message: "Health is good",
-    date: new Date(),
-  });
-});
+// app.get("/health", (res: Response) => {
+//   return res.status(200).json({
+//     message: "Health is good",
+//     date: new Date(),
+//   });
+// });
 
 //to handle CORS error( implemented by web browsers to prevent web pages from making requests to a different domain)
 // app.use((req, res, next) => {
@@ -134,7 +140,7 @@ mongoose.Promise = global.Promise;
 //   mongodb+srv://niraveasternts:npn987654N@@cluster0.iexjg.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
 
 mongoose
-  .connect(process.env.MONGODB_URL)
+  .connect(process.env.MONGODB_URL as string)
   .then(() => {
     console.log("connect to DB");
   })
@@ -143,4 +149,4 @@ mongoose
     console.log(e);
   });
 
-module.exports = app;
+export default app;
