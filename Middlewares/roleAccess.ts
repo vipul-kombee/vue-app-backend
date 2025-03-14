@@ -70,4 +70,4 @@ const roleAccess = (allowedRoles: UserType[]) => {
   };
 };
 
-module.exports = roleAccess;
+export default roleAccess;

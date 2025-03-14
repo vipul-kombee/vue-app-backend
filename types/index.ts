@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
 export enum UserType {
-    BUYER = 'BUYER',
-    SELLER = 'SELLER',
-    SUPERADMIN = 'SUPERADMIN'
+    SUPERADMIN = "SUPERADMIN",
+    SELLER = "SELLER",
+    BUYER = "BUYER"
 }
 
 export interface IUser {
@@ -22,7 +22,7 @@ export interface ISession {
     token: string;
     userId: string;
     expires: Date;
-} 
+}
 
 export interface IProduct {
     name: string;
@@ -30,4 +30,9 @@ export interface IProduct {
     description: string;
     seller?: mongoose.Schema.Types.ObjectId;
     productImage: string;
+}
+
+export interface User {
+    type: UserType;
+    [key: string]: any;
 }

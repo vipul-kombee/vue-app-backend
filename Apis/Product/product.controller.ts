@@ -1,7 +1,7 @@
 import Product from './product.model';
-import { isValidObjectId } from 'mongoose';
+import { isValidObjectId, SortOrder } from 'mongoose';
 import multer from 'multer';
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import fs from 'fs';
 import { IProduct } from '../../types';
 import { MulterError } from 'multer';
@@ -11,11 +11,11 @@ import { FilterQuery } from 'mongoose';
 
 //code to store image files in particular folder
 const storage = multer.diskStorage({
-  destination: (cb: (error: Error | null, destination: string) => void) => {
-    cb(null, "ImageUploads/"); // Define the directory where uploaded files will be stored
+  destination: (req, file, cb) => {
+    cb(null, "ImageUploads/");
   },
-  filename: ( file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
-    cb(null, Date.now() + "-" + file.originalname); //define file name
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
   }
 });
 
@@ -37,30 +37,30 @@ export const getProducts = async (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       message: "Error in fetch products",
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 };
 
 export const getSingleProduct = async (req: Request, res: Response) => {
-    const productId: string = req.params.id;
-    try {
-        const product = await Product.findById(productId).exec();
-        if (!product) {
-            return res.status(404).json({
-                message: "Product not found",
-            });
-        }
-        res.status(200).json({
-            message: "Product fetched!",
-            product,
-        });
-    } catch (error) {
-        res.status(500).json({
-            message: "Error in fetch product",
-            error: error instanceof Error ? error.message : 'Unknown error',
-        });
+  const productId: string = req.params.id;
+  try {
+    const product = await Product.findById(productId).exec();
+    if (!product) {
+      return res.status(404).json({
+        message: "Product not found",
+      });
     }
+    res.status(200).json({
+      message: "Product fetched!",
+      product,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error in fetch product",
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 };
 
 export const getProductsByuserId = (req: Request, res: Response) => {
@@ -91,7 +91,7 @@ export const getProductsByuserId = (req: Request, res: Response) => {
   } catch (error) {
     res.status(500).json({
       message: "Error in fetch products",
-      error: error.message
+      error: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 };
@@ -130,18 +130,18 @@ export const getProductsByuserId = (req: Request, res: Response) => {
 // };
 
 export const createProduct = (req: Request, res: Response) => {
-  
+
   //use upload middleware to handle upload of product image
   //except file with field name productimage
-  upload.single("productImage")(req, res, (err: Error | MulterError | null) => {
-    if (err) {
+  upload.single("productImage")(req, res, async function (err) {
+    if (err instanceof MulterError) {
       return res.status(400).json({
-        message: "Error uploading file",
-        error: err
+        message: "File upload error",
+        error: err.message
       });
     }
 
-   //create object 
+    //create object 
     const product = new Product({
       name: req.body.name,
       price: req.body.price,
@@ -150,25 +150,25 @@ export const createProduct = (req: Request, res: Response) => {
       productImage: req.file ? `upload/${req.file.filename}` : undefined,
     });
 
-    
+
     if (req.file) {  //check req.file is exists or not
       product.productImage = `upload/${req.file.filename}`;  //set productimage to path of uploaded file.
     }
 
-      product.save()
-        .then((savedProduct) => {
-          res.status(201).json({
-            message: "Product added successfully",
-            product: savedProduct,
-          });
-        })
-        .catch((err) => {
-          res.status(500).json({
-            message: "Error while creating product",
-            error: err,
-          });
+    product.save()
+      .then((savedProduct) => {
+        res.status(201).json({
+          message: "Product added successfully",
+          product: savedProduct,
         });
-});
+      })
+      .catch((err) => {
+        res.status(500).json({
+          message: "Error while creating product",
+          error: err,
+        });
+      });
+  });
 };
 
 //update product Api
@@ -192,8 +192,8 @@ export const editProduct = async (req: Request, res: Response) => {
       });
     }
 
-    upload.single("productImage")(req, res, async (err) => {
-      if(err instanceof multer.MulterError) {
+    upload.single("productImage")(req, res, async function (err) {
+      if (err instanceof MulterError) {
         return res.status(400).json({
           message: "File upload error",
           error: err.message
@@ -222,11 +222,11 @@ export const editProduct = async (req: Request, res: Response) => {
 
         // Add productImage to update data if a new image was uploaded
         if (req.file) {
-          if(product.productImage){
+          if (product.productImage) {
             const oldImagePath = product.productImage.replace('upload/', '');
             const fullPath = `ImageUploads/${oldImagePath}`;
 
-            if(fs.existsSync(fullPath)){
+            if (fs.existsSync(fullPath)) {
               fs.unlinkSync(fullPath);
             }
           }
@@ -240,7 +240,7 @@ export const editProduct = async (req: Request, res: Response) => {
           { $set: updateData },
           { new: true }
         );
-        
+
         if (updatedProduct) {
           return res.status(200).json({
             message: "product updated!",
@@ -250,7 +250,7 @@ export const editProduct = async (req: Request, res: Response) => {
           return res.status(404).json({
             message: "Product not updated",
           });
-        } 
+        }
       } catch (error) {
         // If there's an error and a new file was uploaded, delete it
         if (req.file) {
@@ -262,10 +262,10 @@ export const editProduct = async (req: Request, res: Response) => {
 
         return res.status(500).json({
           message: "Error updating product",
-          error: error.message
+          error: error instanceof Error ? error.message : String(error)
         });
       }
-    })
+    });
   } catch (error) {
     res.status(500).json({
       message: "Error in edit Product",
@@ -294,14 +294,14 @@ export const deleteProduct = async (req: Request, res: Response) => {
       });
     }
 
-     // Remove image from ImageUploads folder once its particular product deleted
-     if (product.productImage) {
-        const oldImagePath = product.productImage.replace('upload/', '');
-        const fullPath = `ImageUploads/${oldImagePath}`;
+    // Remove image from ImageUploads folder once its particular product deleted
+    if (product.productImage) {
+      const oldImagePath = product.productImage.replace('upload/', '');
+      const fullPath = `ImageUploads/${oldImagePath}`;
 
-        if(fs.existsSync(fullPath)){
-          fs.unlinkSync(fullPath);
-        }
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+      }
     }
 
     await Product.findByIdAndDelete(productId);
@@ -343,25 +343,25 @@ export const searchProducts = async (req: Request, res: Response) => {
     let filter: FilterQuery<IProduct> = {};
 
     // Search by name or description
-    if(search) {
+    if (search) {
       filter.$or = [
-        {name: { $regex: search, $options: 'i'}},
+        { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } }
       ]
     }
-   
+
     // Price range filter
     if (minPrice || maxPrice) {
       filter.price = {};
-      if(minPrice) filter.price.$gte = parseFloat(minPrice);
-      if(maxPrice) filter.price.$lte = parseFloat(maxPrice);
+      if (minPrice) filter.price.$gte = parseFloat(minPrice);
+      if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
     }
 
-    let sort = {};
+    let sort: { [key: string]: number } = {};
     if (sortBy) {
       sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
     } else {
-      sort = { createdAt: -1};
+      sort = { createdAt: -1 };
     }
 
     //calculate skip for pagination
@@ -372,11 +372,11 @@ export const searchProducts = async (req: Request, res: Response) => {
 
     //Execute query
     const products = await Product.find(filter)
-       .sort(sort)
-       .skip(skip)
-       .limit(parseInt(limit as string));
+      .sort(sort as { [key: string]: SortOrder })
+      .skip(skip)
+      .limit(parseInt(limit as string));
 
-       const totalPages = Math.ceil(total / parseInt(limit as string));
+    const totalPages = Math.ceil(total / parseInt(limit as string));
 
     // Add aggregation for faceted search (optional)
     const aggregation = await Product.aggregate([
@@ -398,7 +398,7 @@ export const searchProducts = async (req: Request, res: Response) => {
           ]
         }
       }
-    ]);   
+    ]);
 
     res.status(200).json({
       status: 'success',

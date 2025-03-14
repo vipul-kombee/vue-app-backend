@@ -38,4 +38,4 @@ const auth = (req: Request, res: Response, next: NextFunction): void => {
   });
 };
 
-module.exports = auth;
+export default auth;

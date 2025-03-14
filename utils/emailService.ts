@@ -1,4 +1,4 @@
-const nodemailer = require("nodemailer");
+import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -8,9 +8,8 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendResetPasswordEmail = async (validateEmail, resetToken) => {
-  const resetUrl = `xyz.com`;
-  //   const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+const sendResetPasswordEmail = async (validateEmail: string, resetToken: string) => {
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -35,4 +34,4 @@ const sendResetPasswordEmail = async (validateEmail, resetToken) => {
   }
 };
 
-module.exports = sendResetPasswordEmail;
+export default sendResetPasswordEmail;

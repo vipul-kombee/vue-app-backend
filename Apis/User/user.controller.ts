@@ -139,15 +139,15 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       });
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       message: "Error in user registration",
-      error: error.message,
+      error: (error as Error).message,
     });
   }
 };
 
 export const login = (req: Request, res: Response, next: NextFunction) => {
-  passport.authenticate("local", (err, user, info) => {
+  passport.authenticate("local", (err: Error | null, user: any, info: { message: string }) => {
     if (err) {
       return res.status(500).json({
         message: "Error in login user",
