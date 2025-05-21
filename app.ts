@@ -8,6 +8,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import mongoose from "mongoose";
 import { IUser } from "./types";
+import PaymentRoutes from './Apis/Payment/payment.route';
 
 dotenv.config();
 const app = express();
@@ -134,6 +135,7 @@ import ProductRoutes from "./Apis/Product/product.route";
 
 app.use("/user", UserRoutes);
 app.use("/product", ProductRoutes);
+app.use('/payment', PaymentRoutes);
 
 mongoose.Promise = global.Promise;
 
