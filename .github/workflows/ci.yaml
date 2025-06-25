@@ -1,0 +1,46 @@
+name: Node.js Practical CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'  # Use a modern and LTS version
+
+    - name: Install dependencies (if package.json exists)
+      run: |
+        if [ -f "package.json" ]; then
+          npm install
+        else
+          echo "No package.json found — skipping npm install."
+        fi
+
+    - name: Set version info
+      id: version
+      run: |
+        VERSION=$(git describe --tags --always --dirty)
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+    - name: Zip project folder
+      run: |
+        ZIP_NAME="nodejs-${{ steps.version.outputs.version }}.zip"
+        zip -r "$ZIP_NAME" . -x "*.git*" "node_modules/*" "__tests__/*"
+        echo "ZIP_NAME=$ZIP_NAME" >> "$GITHUB_ENV"
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.ZIP_NAME }}
+        path: ${{ env.ZIP_NAME }}
